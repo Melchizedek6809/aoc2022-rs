@@ -61,6 +61,8 @@ struct Machine {
     wait_cycles: usize,
     signal_strength: isize,
     mem: Vec<MachineOp>,
+
+    crt: Vec<char>,
 }
 
 impl Machine {
@@ -72,6 +74,7 @@ impl Machine {
             signal_strength: 0,
             wait_cycles: 0,
             mem,
+            crt: vec![]
         }
     }
 
@@ -81,10 +84,31 @@ impl Machine {
         }
     }
 
+    fn update_crt(&mut self) {
+        let crt_x = (self.cycles % 40) as isize;
+        let low = (self.x) as isize;
+        let high = (self.x+2) as isize;
+        if crt_x >= low && crt_x <= high {
+            self.crt.push('#');
+        } else {
+            self.crt.push('.');
+        }
+    }
+
+    pub fn print_crt(&self) {
+        println!("+++ Crt +++");
+        self.crt.chunks(40).for_each(|line| {
+            line.iter().for_each(|c| print!("{}",c));
+            println!("");
+        });
+        println!("--- End of Crt ---");
+    }
+
     pub fn run(&mut self) {
         while self.ip < self.mem.len() {
             self.cycles += 1;
             self.update_signal_strength();
+            self.update_crt();
             let op = self.mem[self.ip];
             op.eval(self);
         }
@@ -107,19 +131,16 @@ fn run(path: &str) -> isize {
         }).collect();
     let mut machine = Machine::new(program);
     machine.run();
+    machine.print_crt();
     machine.signal_strength()
 }
 
-fn run_both(path: &str) -> (isize, isize) {
-    (run(path), run(path))
-}
-
 fn main() {
-    let (total_score, total_score_b) = run_both("example.txt");
-    println!("The example score is: {} {}", total_score, total_score_b);
+    let total_score = run("example.txt");
+    println!("The example score is: {}", total_score);
 
-    let (total_score, total_score_b) = run_both("input.txt");
-    println!("The score is: {} {}", total_score, total_score_b);
+    let total_score = run("input.txt");
+    println!("The score is: {}", total_score);
 }
 
 #[cfg(test)]
@@ -128,7 +149,7 @@ mod tests {
 
     #[test]
     fn aoc_test() {
-        let (total_score, total_score_b) = run_both("input.txt");
+        let total_score = run("input.txt");
         assert_eq!(total_score, 17840);
     }
 }
